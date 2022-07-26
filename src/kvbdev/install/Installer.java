@@ -1,36 +1,40 @@
 package kvbdev.install;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class Installer {
 
-    private final String installDir;
-    private final SimpleLog logger;
+    protected final String installDir;
+    protected final SimpleLog logger;
 
     public Installer(String installDir, SimpleLog logger) {
         this.installDir = installDir;
         this.logger = logger;
     }
 
-    public boolean install() {
+    public boolean install(Iterable<String> paths) {
         boolean success = true;
-
         File rootPath = new File(installDir);
 
         if (!(rootPath.exists() & rootPath.isDirectory())) {
-            logger.log("Директория установки не существует: '", rootPath.getAbsolutePath(), "'");
+            logger.log("Директория установки не существует: '", rootPath.getAbsolutePath(), "'.");
             return false;
         }
 
-        success &= makeDirectories("src", "res", "savegames", "temp");
-        success &= makeDirectories("src/main", "src/test");
-        success &= makeFiles("src/main", "Main.java", "Utils.java");
-        success &= makeDirectories("res/drawables", "res/vectors", "res/icons");
-        success &= makeFiles("temp", "temp.txt");
+        for (String path : paths) {
+            File newPath = new File(rootPath, path);
+            if (path.endsWith("/")) {
+                success &= makeDirectory(newPath);
+            } else {
+                success &= makeFile(newPath);
+            }
+        }
 
         if (success) {
-            logger.log("Необходимые файлы и каталоги были успешно созданы.");
+            logger.log("Файлы и каталоги были успешно созданы.");
         } else {
             logger.log("При создании файлов и каталогов произошли ошибки.");
         }
@@ -38,55 +42,54 @@ public class Installer {
         return success;
     }
 
-    protected boolean makeDirectories(String... dirNames) {
-        boolean success = true;
+    protected boolean makeDirectory(File newPath) {
+        logger.log("Создание директории '", newPath.getAbsolutePath(), "'");
 
-        for (String dirName : dirNames) {
-            File newPath = new File(installDir, dirName);
-            logger.log("Создание директории '", newPath.getAbsolutePath(), "'");
-
-            if (newPath.exists() & newPath.isDirectory()) {
-                logger.append(" - уже существует.");
-                continue;
-            }
-
+        if (newPath.exists() & newPath.isDirectory()) {
+            logger.append(" - уже существует.");
+        } else {
             if (newPath.mkdir()) {
                 logger.append(" - успешно.");
             } else {
                 logger.append(" - ошибка!");
-                success = false;
+                return false;
             }
         }
-
-        return success;
+        return true;
     }
 
-    protected boolean makeFiles(String dirName, String... fileNames) {
-        boolean success = true;
+    protected boolean makeFile(File newFile) {
+        logger.log("Создание файла '", newFile.getAbsolutePath(), "'");
 
-        for (String fileName : fileNames) {
-            File newFile = new File(installDir + File.separator + dirName, fileName);
-            logger.log("Создание файла '", newFile.getAbsolutePath(), "'");
-
-            if (newFile.exists() & newFile.isFile()) {
-                logger.append(" - уже существует.");
-                continue;
-            }
-
+        if (newFile.exists() & newFile.isFile()) {
+            logger.append(" - уже существует.");
+        } else {
             try {
                 if (newFile.createNewFile()) {
                     logger.append(" - успешно.");
                 } else {
                     logger.append(" - ошибка!");
-                    success = false;
+                    return false;
                 }
             } catch (IOException ex) {
                 logger.append(" - ошибка: ", ex.getMessage());
-                success = false;
+                return false;
             }
         }
-
-        return success;
+        return true;
     }
 
+    public boolean writeFile(String filePath, String content) {
+        File newFile = new File(installDir, filePath);
+        logger.log("Запись в файл '", newFile.getAbsolutePath(), "'");
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(newFile))) {
+            writer.write(content);
+            logger.append(" - успешно.");
+        } catch (IOException e) {
+            logger.log("При записи файла произошла ошибка: ", e.getMessage());
+            return false;
+        }
+        return true;
+    }
 }
