@@ -9,9 +9,14 @@ import java.util.zip.ZipInputStream;
 public class LoadingMain {
 
     public static void main(String[] args) throws Exception {
-        openZip("games/savegames/zip.zip", "games/savegames");
+        String savedGamesDir = "games/savegames";
+        String archivePathStr = savedGamesDir + File.separator + "archive.zip";
 
-        File[] savedGames = new File("games/savegames").listFiles((dir, name) -> name.endsWith(".dat"));
+        openZip(archivePathStr, savedGamesDir);
+
+        File[] savedGames = new File(savedGamesDir).listFiles((dir, name) ->
+                name.startsWith("save") & name.endsWith(".dat"));
+
         for (File gameFile : savedGames) {
             GameProgress game = openProgress(gameFile.getPath());
             System.out.println(game);
@@ -31,7 +36,6 @@ public class LoadingMain {
                 zipInput.closeEntry();
             }
         }
-
     }
 
     public static GameProgress openProgress(String filePath) throws IOException, ClassNotFoundException {
