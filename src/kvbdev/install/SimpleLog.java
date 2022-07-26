@@ -4,16 +4,22 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class SimpleLog {
     private final StringBuilder sb;
+    private final DateTimeFormatter dateTimeFormatter;
 
     public SimpleLog() {
         sb = new StringBuilder();
+        dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     }
 
     public void log(Object... parts) {
         sb.append("\n");
+        sb.append(LocalDateTime.now().format(dateTimeFormatter));
+        sb.append(" : ");
         append(parts);
     }
 
