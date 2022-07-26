@@ -1,6 +1,6 @@
 package kvbdev.install;
 
-import java.io.File;
+import java.util.List;
 
 public class InstallMain {
 
@@ -12,10 +12,25 @@ public class InstallMain {
         String installDir = "games";
         SimpleLog logger = new SimpleLog();
 
-        Installer installer = new Installer(installDir, logger);
-        installer.install();
+        List<String> paths = List.of(
+                "src/",
+                "src/main/",
+                "src/main/Main.java",
+                "src/main/Utils.java",
+                "src/test/",
+                "res/",
+                "res/drawables/",
+                "res/vectors/",
+                "res/icons/",
+                "savegames/",
+                "temp/",
+                "temp/temp.txt"
+        );
 
-        logger.writeToFile(installDir + File.separator + "temp/temp.txt");
+        Installer installer = new Installer(installDir, logger);
+        installer.install(paths);
+        installer.writeFile("temp/temp.txt", logger.getLog());
+
         System.out.println(logger.getLog());
     }
 }
