@@ -3,7 +3,10 @@ package kvbdev.saving;
 import kvbdev.GameProgress;
 
 import java.io.*;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -11,24 +14,39 @@ public class SavingMain {
 
     public static void main(String[] args) throws IOException {
 
-        GameProgress game1 = new GameProgress(100, 1, 1, 0);
-        GameProgress game2 = new GameProgress(50, 3, 2, 1000);
-        GameProgress game3 = new GameProgress(25, 5, 3, 5000);
+        String savedGamesDir = "games/savegames";
+        String archivePathStr = savedGamesDir + File.separator + "archive.zip";
+        AtomicInteger saveNum = new AtomicInteger();
 
-        saveGame("games/savegames/game1.dat", game1);
-        saveGame("games/savegames/game2.dat", game2);
-        saveGame("games/savegames/game3.dat", game3);
+        Supplier<String> filePathFactory = () ->
+                savedGamesDir + File.separator + "save" + saveNum.incrementAndGet() + ".dat";
 
-        List<String> savedGames = List.of(
-                "games/savegames/game1.dat",
-                "games/savegames/game2.dat",
-                "games/savegames/game3.dat");
+        List<GameProgress> gameStates = List.of(
+                new GameProgress(100, 1, 1, 0.0),
+                new GameProgress(50, 3, 2, 333.33),
+                new GameProgress(25, 5, 3, 5678.90)
+        );
 
-        zipFiles("games/savegames/zip.zip", savedGames);
+        List<String> savedGames = saveGamesList(gameStates, filePathFactory);
+
+        zipFiles(archivePathStr, savedGames);
 
         savedGames.stream()
                 .map(File::new)
                 .forEach(File::delete);
+
+    }
+
+    public static List<String> saveGamesList(Iterable<GameProgress> gameStates, Supplier<String> filePathFactory)
+            throws IOException {
+        List<String> savedGamesFileNames = new LinkedList<>();
+
+        for (GameProgress game : gameStates) {
+            String filePath = filePathFactory.get();
+            saveGame(filePath, game);
+            savedGamesFileNames.add(filePath);
+        }
+        return savedGamesFileNames;
     }
 
     public static void saveGame(String filePath, GameProgress gameProgress) throws IOException {
@@ -51,7 +69,8 @@ public class SavingMain {
                 // Было бы эффективнее использовать методы transferTo() или readAllBytes()
                 // но в условии сказано применять методы read() и write()
 
-                try (FileInputStream input = new FileInputStream(srcFile)) {
+                try (FileInputStream fis = new FileInputStream(srcFile);
+                     BufferedInputStream input = new BufferedInputStream(fis)) {
                     int b;
                     while ((b = input.read()) != -1) {
                         zipOut.write(b);
@@ -61,6 +80,5 @@ public class SavingMain {
                 zipOut.closeEntry();
             }
         }
-
     }
 }
